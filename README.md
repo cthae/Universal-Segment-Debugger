@@ -8,4 +8,5 @@ Planned features:
 * [ ] Extension popup indicating basic info about the Segment library loaded
 * [ ] Logging Segment events in the console in a structured way
 * [ ] Config for allowing custom Segment endpoints instead of the default cdn.segment.com and api.segment.io
+* [ ] Set up the bookmarks tab.
 * [ ] More things pending.
