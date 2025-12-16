@@ -40,8 +40,8 @@ function deployClickListeners() {
   document.getElementById("OTRejectAll").addEventListener("click", OTRejectAll);
   document.getElementById("OTAllowAll").addEventListener("click", OTAllowAll);
   document.getElementById("raccoon").addEventListener("click", loveTheRaccoon);
-  document.getElementById("setLoggingHeadings").addEventListener("click", setLoggingHeadings);
-  document.getElementById("openChromeFlags").addEventListener("click", openChromeFlags);
+  //document.getElementById("setLoggingHeadings").addEventListener("click", setLoggingHeadings);
+  //document.getElementById("openChromeFlags").addEventListener("click", openChromeFlags);
   document.getElementById("defaultTab").addEventListener("change", defaultTabChange);
   document.getElementById("themeSwitcher").addEventListener("click", switchTheme);
   document.getElementById("clearCookies").addEventListener("click", clearCookies);
@@ -745,12 +745,14 @@ async function loadSettings() {
       }
       console.log("@@@ Settings Exist, the obj is ", data.settings);
       Object.keys(data.settings).forEach(setting => {
-        if (document.getElementById(setting)){
+        if (document.getElementById(setting)?.type == 'checkbox'){
           document.getElementById(setting).checked = data.settings[setting];
+        } else if (document.getElementById(setting)?.type == 'input'){
+          document.getElementById(setting).value = data.settings[setting];
         }
       });
 
-      Object.keys(data.settings?.colors).forEach(colorId => {
+      Object.keys(data.settings?.colors || []).forEach(colorId => {
         if (document.getElementById(colorId)){
           const field = document.getElementById(colorId);
           const exampleTd = field.parentElement.parentElement.querySelector("[name='example']");
@@ -789,6 +791,13 @@ async function settingsSetter(settings) {
           typeof window._satellite !== 'undefined' ? window._satellite?.setDebug(flag ? true : false) : '';
         });
       }
+    })
+  });
+
+  document.querySelectorAll("input[type='text']").forEach(input => {
+    input.addEventListener("change", (event) => {
+      settings[event.target.id] = event?.target?.value;
+      chrome.storage.sync.set({ settings: settings });
     })
   });
 
