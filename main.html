@@ -85,7 +85,7 @@
     <table class="settingsTable">
       <tbody>
         <tr>
-          <td><button class="tablinks" name="Redirections">↪️Redirection Rules</button></td>
+          <!--<td><button class="tablinks" name="Redirections">↪️Redirection Rules</button></td>-->
           <td><button class="tablinks" name="Colors">🎨Color picker</button></td>
         </tr>
         <tr>
@@ -98,83 +98,16 @@
             </select></td>
         </tr>
         <tr>
-          <td>Enable Core AA server calls logging:</td>
-          <td class="centralize"><input type="checkbox" checked id="aabox"></td>
+          <td>Enable Core Segment calls console logging:</td>
+          <td class="centralize"><input type="checkbox" checked id="coreLogging"></td>
         </tr>
         <tr>
-          <td>Core AA/Web SDK logs expanded?</td>
-          <td class="centralize"><input type="checkbox" id="mainExpand"></td>
+          <td>Custom Segment CDN endpoint?</td>
+          <td class="centralize"><input type="text" id="segmentCdnEndpoint" value="cdn.segment.com"></td>
         </tr>
         <tr>
-          <td>Core Evars and Props sections expanded?</td>
-          <td class="centralize"><input type="checkbox" checked id="varsExpand"></td>
-        </tr>
-        <tr>
-          <td>Context variables section expanded?</td>
-          <td class="centralize"><input type="checkbox" id="contextVarsExpand"></td>
-        </tr>
-        <tr>
-          <td>Enable debug Launch logging (setDebug):</td>
-          <td class="centralize"><input type="checkbox" id="launchbox"></td>
-        </tr>
-        <tr style="color:gray">
-          <td>Your awesome useful setting could be here.</td>
-          <td>If you have a cool idea:)</td>
-        </tr>
-        <tr>
-          <td id="redirectionCTATD">
-            User-customized logging. Just add fields to make them pop.
-            <a target="_blank"
-              href="https://experienceleague.adobe.com/docs/analytics/implementation/validate/query-parameters.html?lang=en">AppMeasurement</a>
-            or <a target="_blank"
-              href="https://experienceleague.adobe.com/en/docs/analytics/implementation/aep-edge/xdm-var-mapping">XDM</a>
-            <br>
-            <div class="centralize" style="margin-top:6px"><button id="setLoggingHeadings">Set/Clear Headings</button>
-            </div>
-          </td>
-          <td>
-            <textarea rows="3" cols="20" id="loggingHeadings"
-              placeholder="e69, p3, l2, c7, v13, evar13, prop27, events, web.webPageDetails.URL"></textarea>
-          </td>
-        </tr>
-        <tr>
-          <td colspan="2" class="centralize" style="font-weight: 700;">Redirection Settings:</td>
-        </tr>
-        <tr>
-          <td>Clear redirections after browsing session expired?</td>
-          <td class="centralize"><input type="checkbox" checked id="sessionRedirections"></td>
-        </tr>
-        <tr>
-          <td colspan="2" class="centralize" style="font-weight: 700;">Web SDK Settings:</td>
-        </tr>
-        <tr>
-          <td>Hide the target hits?</td>
-          <td class="centralize"><input id="hideTargetHits" type="checkbox"></td>
-        </tr>
-        <tr>
-          <td>Log all? Raw object logging [overrides the below settings]</td>
-          <td class="centralize"><input id="logAllWebSDK" type="checkbox"></td>
-        </tr>
-        <tr>
-          <td>Log the boring XDM fields? (device, browser, environment and so on)</td>
-          <td class="centralize"><input id="logBoringFieldsWebSDK" type="checkbox"></td>
-        </tr>
-        <tr>
-          <td>Log the data.__adobe object?</td>
-          <td class="centralize"><input id="logDataObject" type="checkbox"></td>
-        </tr>
-        <tr>
-          <td colspan="2" class="centralize" style="font-weight: 700;">Launch UI Improvements:</td>
-        </tr>
-        <tr>
-          <td>Enable UI Improvements?</td>
-          <td class="centralize"><input id="enableLaunchUIImprovements" type="checkbox"></td>
-        </tr>
-        <tr>
-          <td>Chrome can rewrite white backgrounds automatically enabling the dark theme everywhere (including Launch)
-          </td>
-          <td class="centralize"><button id="openChromeFlags" class="success">Open <b>enable-force-dark</b></button>
-          </td>
+          <td>Custom Segment API endpoint?</td>
+          <td class="centralize"><input type="text" id="segmentApiEndpoint" value="api.segment.io"></td>
         </tr>
         <!--				<tr>
           <td>Custom Edge Path</td>

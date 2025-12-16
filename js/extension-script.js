@@ -14,6 +14,7 @@ async function getValuesFromClient(){
   const client = {};
   client.timing = JSON.parse(await getTiming());
   client._satellite = JSON.parse(await getPageVar('_satellite'));
+  //client.getDom = JSON.parse(await getPageVar('_satellite'));
   client.serverCalls = JSON.parse(await getAACalls());
   client.aaHits = client.serverCalls.filter((url) => {
     return /\/b\/ss\//i.test(url.name);
