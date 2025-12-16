@@ -747,7 +747,7 @@ async function loadSettings() {
       Object.keys(data.settings).forEach(setting => {
         if (document.getElementById(setting)?.type == 'checkbox'){
           document.getElementById(setting).checked = data.settings[setting];
-        } else if (document.getElementById(setting)?.type == 'input'){
+        } else if (document.getElementById(setting)?.type == 'text'){
           document.getElementById(setting).value = data.settings[setting];
         }
       });
