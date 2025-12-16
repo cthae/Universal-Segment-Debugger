@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', async () => {
   updateVersion(chrome.runtime.getManifest().version);
-  loadSettings();
   deployClickListeners();
+  await loadSettings();
   const client = await getValuesFromClient();
   updatePage(await checkStatus(client._satellite, client.pageLoadTime, client.aaHits.length, client.webSDKHits.length));
 });
@@ -14,7 +14,7 @@ async function getValuesFromClient(){
   const client = {};
   client.timing = JSON.parse(await getTiming());
   client._satellite = JSON.parse(await getPageVar('_satellite'));
-  //client.getDom = JSON.parse(await getPageVar('_satellite'));
+  client.segmentSettingsCalls = await getSegmentSourceIds(document.getElementById('segmentCdnEndpoint')?.value || '');
   client.serverCalls = JSON.parse(await getAACalls());
   client.aaHits = client.serverCalls.filter((url) => {
     return /\/b\/ss\//i.test(url.name);
@@ -23,6 +23,9 @@ async function getValuesFromClient(){
     return /\/ee\//i.test(url.name);
   });
   client.pageLoadTime = client.timing.toFixed(0);
+  console.log('client is ');
+  console.log(JSON.stringify(client, null, 4));
+  
   return client;
 }
 
@@ -466,6 +469,21 @@ function setStatusDependantListeners(){
 async function getContainer() {
   const [{ result }] = await chrome.scripting.executeScript({
     func: () => JSON.stringify(_satellite._container),
+    args: [],
+    target: {
+      tabId: (await chrome.tabs.query({ active: true, currentWindow: true }))[0].id
+    },
+    world: 'MAIN',
+  });
+  return result;
+}
+
+async function getSegmentSourceIds(segmentCdnEndpoint = "cdn.segment.com") {
+  const [{ result }] = await chrome.scripting.executeScript({
+    func: () => {
+      const segmentSettingsEndpointRegex = new RegExp(`${segmentCdnEndpoint}.*\/([^\/]{30,40})\/`, 'i');
+      JSON.stringify(performance.getEntriesByType("resource").filter((obj) => { return segmentSettingsEndpointRegex.test(obj.name); }))
+    },
     args: [],
     target: {
       tabId: (await chrome.tabs.query({ active: true, currentWindow: true }))[0].id
