@@ -1,5 +1,6 @@
 chrome.tabs.onUpdated.addListener(tabChangedCallback);
 chrome.tabs.onActivated.addListener(tabChangedCallback);
+const state = {};
 
 async function tabChangedCallback(){
   const tab = (await chrome.tabs.query({ active: true, currentWindow: true }))[0];
@@ -46,6 +47,8 @@ async function setDebug(flag) {
 
 async function mainListener() {
   const filter = { urls: ["<all_urls>", "http://*/*", "https://*/*"] }//   *://*/*/b/ss/*   --   <all_urls>
+  const segmentCdnEndpoint = state.settings.segmentCdnEndpoint || "cdn.segment.com";
+  const segmentApiEndpoint = state.settings.segmentApiEndpoint || "api.segment.io";
   const requests = new Map();
   chrome.webRequest.onBeforeRequest.addListener(async info => {
     let urlType = getUrlType(info.url);
@@ -175,6 +178,7 @@ function checkSettings(e) {
     settings.logDataObject = settings.logDataObject ?? false;
     settings.enableLaunchUIImprovements = settings.enableLaunchUIImprovements ?? true;
     chrome.storage.sync.set({ settings: settings });
+    state.settings = settings;
   });
 }
 
