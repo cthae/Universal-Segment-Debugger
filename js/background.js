@@ -21,40 +21,17 @@ async function main() {
 
 function messageListenerRouter() {
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message?.type === 'setDebug') {
-      setDebug(message.value);
-    } else if (message === 'removeCookies'){
+    if (message === 'removeCookies'){
       deleteAllCookiesOfActiveTab();
     }
   });
 }
 
-async function setDebug(flag) {
-  const tab = (await chrome.tabs.query({ active: true, currentWindow: true }))[0];
-  if (!isTabLegal(tab)){return false;}
-  chrome.scripting.executeScript({
-    func: (flag) => {
-      localStorage.setItem("com.adobe.reactor.debug", !!flag);
-      typeof _satellite !== 'undefined' ? _satellite?.setDebug(flag ? true : false) : '';
-    },
-    args: [flag],
-    target: {
-      tabId: tab.id
-    },
-    world: 'MAIN'
-  });
-}
-
 async function mainListener() {
   const filter = { urls: ["<all_urls>", "http://*/*", "https://*/*"] }//   *://*/*/b/ss/*   --   <all_urls>
-  const segmentCdnEndpoint = state.settings.segmentCdnEndpoint || "cdn.segment.com";
-  const segmentApiEndpoint = state.settings.segmentApiEndpoint || "api.segment.io";
   const requests = new Map();
   chrome.webRequest.onBeforeRequest.addListener(async info => {
-    let urlType = getUrlType(info.url);
-    if (urlType !== "Not Adobe") {
-    }
-    if (urlType !== "Not Adobe" && info.method === "POST" &&
+    if (getUrlType(info.url) === "segment" && info.method === "POST" &&
       (info?.requestBody?.raw?.length > 0 || info?.requestBody?.formData || urlType === "Beaconed webSDK")) {
       let postedString = "";
       if (urlType === "AA") {
@@ -81,18 +58,14 @@ async function mainListener() {
 
   chrome.webRequest.onHeadersReceived.addListener(async info => {
     //setFavicon();
-    let urlType = getUrlType(info.url);
-    if (urlType !== "Not Adobe" && info.statusCode === 200) {
-      let _satelliteInfo = JSON.parse(await getSatelliteInfo(info.tabId))
+    if (getUrlType(info.url) === "segment" && info.statusCode === 200) {
       const postRequest = requests.get(info.requestId);
       if (info.method === "POST" && postRequest) {
-        postRequest._satelliteInfo = _satelliteInfo;
         sendToTab(postRequest, info.tabId);
       } else {
         sendToTab({
           info: info,
           eventTriggered: "onHeadersReceived",
-          _satelliteInfo: _satelliteInfo,
           type: urlType
         }, info.tabId);
       }
@@ -101,14 +74,10 @@ async function mainListener() {
   }, filter);
 
   chrome.webRequest.onErrorOccurred.addListener(async info => {
-    let urlType = getUrlType(info.url);
-    if (urlType !== "Not Adobe") {
-      let _satelliteInfo = JSON.parse(await getSatelliteInfo(info.tabId))
+    if (getUrlType(info.url) === "segment") {
       sendToTab({
         info: info,
-        eventTriggered: "onErrorOccurred",
-        _satelliteInfo: _satelliteInfo,
-        type: urlType
+        eventTriggered: "onErrorOccurred"
       }, info.tabId);
     }
     //requests.delete(info?.requestId);
@@ -117,7 +86,6 @@ async function mainListener() {
   async function processOrphanedRequest(requestId) {
     const request = requests.get(requestId);
     if (request) {
-      request._satelliteInfo = JSON.parse(await getSatelliteInfo(request.info.tabId));
       request.eventTriggered = "timeoutError";
       sendToTab(request, request.info.tabId);
     }
@@ -125,31 +93,12 @@ async function mainListener() {
 }
 
 function getUrlType(url) {
-  if (/\/b\/ss\//.test(url)) {
-    return "AA";
-  } else if (/\/ee\/.*interact\?configId=/.test(url)) {
-    return "webSDK";
-  } else if (/\/ee\/.*collect\?configId=/.test(url)) {
-    return "Beaconed webSDK";
-  } else {
-    return "Not Adobe";
+  const segmentCdnEndpoint = state.settings.segmentCdnEndpoint || "cdn.segment.com";
+  const segmentApiEndpoint = state.settings.segmentApiEndpoint || "api.segment.io";
+  if (url.includes(segmentCdnEndpoint) || url.includes(segmentApiEndpoint){
+    return "segment";
   }
-}
-
-async function getSatelliteInfo(tabId) {
-  const [{ result }] = await chrome.scripting.executeScript({
-    func: () => JSON.stringify({
-      property: window?._satellite?.property?.name || "",
-      environment: window?._satellite?.environment?.stage || "",
-      buildtime: window?._satellite?.buildInfo?.buildDate || ""
-    }),
-    args: [],
-    target: {
-      tabId: tabId || (await chrome.tabs.query({ active: true, currentWindow: true }))[0].id
-    },
-    world: 'MAIN',
-  });
-  return result;
+  return "N/A"
 }
 
 async function sendToTab(msg, tabIdFromOutside) {
@@ -192,34 +141,17 @@ function universalPostParser(info) {
   }
 }
 
-async function setFavicon() {
+async function setFavicon(status) {
   const tab = (await chrome.tabs.query({ active: true, currentWindow: true }))[0];
   if (!isTabLegal(tab)){return false;}
-  const details = {path: "favicon 16-4.png", tabId: tab.id};
-  const environment = await chrome.scripting.executeScript({
-    func: () => {
-      return window?._satellite?.environment?.stage;
-    },
-    args: [],
-    target: {
-      tabId: tab.id
-    },
-    world: 'MAIN'
-  });
+  const details = {path: "favicon 16-4 - grey.png", tabId: tab.id};
   //console.log("@@@ Debugging, the environment is", environment[0].result);
-  if(!environment[0]?.result){
-    details.path = "../favicon 16-4 - pink.png";
-  } else if (environment[0].result === "production"){
-    details.path = "../favicon 16-4 - green.png";
-  } else {
-    details.path = "../favicon 16-4 - orange.png";
-  }
+  details.path = `../favicon 16-4 - ${status}.png`;
   chrome.action.setIcon(details);
 }
 
 function isTabLegal(tab){
   const isLegal = !!tab?.url && !/^(about:|chrome:\/\/)/i.test(tab.url);
-  //console.log("@@@ Debugging, the tab legality is", isLegal);
   return isLegal;
 }
 
