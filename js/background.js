@@ -31,43 +31,40 @@ async function mainListener() {
   const filter = { urls: ["<all_urls>", "http://*/*", "https://*/*"] }//   *://*/*/b/ss/*   --   <all_urls>
   const requests = new Map();
   chrome.webRequest.onBeforeRequest.addListener(async info => {
-    if (getUrlType(info.url) === "segment" && info.method === "POST" &&
+    const urlType = getUrlType(info.url);
+    if (urlType === "segmentAPI" && info.method === "POST" &&
       (info?.requestBody?.raw?.length > 0 || info?.requestBody?.formData || urlType === "Beaconed webSDK")) {
-      let postedString = "";
-      if (urlType === "AA") {
-        postedString = universalPostParser(info);
-      } else if (urlType === "webSDK") {
-        postedString = universalPostParser(info);
-      } else if (urlType === "Beaconed webSDK") {
-        sendToTab({
-          info: info,
-          eventTriggered: "onBeforeRequest",
-          type: urlType
-        }, info.tabId);
-        return; //pings (beacons) sometimes don't get responses, or they come in too late, so this.
-      }
+      setFavicon("green");
+      let postedString = universalPostParser(info);
       requests.set(info.requestId, {
         info: info,
         postPayload: postedString,
-        eventTriggered: "onBeforeRequest",
+        eventTriggered: "onBeforeRequest - API",
         type: urlType
       });
       setTimeout(processOrphanedRequest, 6000, info.requestId);
+    } else if (urlType === "segmentCDN"){
+      requests.set(info.requestId, {
+        info: info,
+        eventTriggered: "onBeforeRequest - CDN",
+        type: urlType
+      });
     }
   }, filter, ['requestBody']);
 
   chrome.webRequest.onHeadersReceived.addListener(async info => {
-    //setFavicon();
-    if (getUrlType(info.url) === "segment" && info.statusCode === 200) {
+    if (getUrlType(info.url) !== "N/A" && info.statusCode === 200) {
       const postRequest = requests.get(info.requestId);
       if (info.method === "POST" && postRequest) {
         sendToTab(postRequest, info.tabId);
       } else {
-        sendToTab({
-          info: info,
-          eventTriggered: "onHeadersReceived",
-          type: urlType
-        }, info.tabId);
+        if (/analytics/i.test(info.url)){//the core library
+          state.segment.libraryLoaded = true;
+          state.segment.sourceId = info.url.match(/\/(\w{30,40})\//)[1];
+        } else if (/settings/i.test(info.url)){//the settings
+          state.segment.settings = info;
+          console.log("the settings have been received, the details are in ", state);
+        }
       }
       requests.delete(info?.requestId);
     }
@@ -95,8 +92,10 @@ async function mainListener() {
 function getUrlType(url) {
   const segmentCdnEndpoint = state.settings.segmentCdnEndpoint || "cdn.segment.com";
   const segmentApiEndpoint = state.settings.segmentApiEndpoint || "api.segment.io";
-  if (url.includes(segmentCdnEndpoint) || url.includes(segmentApiEndpoint){
-    return "segment";
+  if (url.includes(segmentCdnEndpoint)){
+    return "segmentCDN";
+  } else if (url.includes(segmentApiEndpoint)){
+    return "segmentAPI";
   }
   return "N/A"
 }
