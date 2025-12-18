@@ -1,11 +1,10 @@
 chrome.tabs.onUpdated.addListener(tabChangedCallback);
 chrome.tabs.onActivated.addListener(tabChangedCallback);
-const state = {};
+const state = {segment: {}};
 
 async function tabChangedCallback(){
   const tab = (await chrome.tabs.query({ active: true, currentWindow: true }))[0];
   if (!isTabLegal(tab)){return false;}
-  setFavicon();
   messageListenerRouter();
 }
 
@@ -34,7 +33,6 @@ async function mainListener() {
     const urlType = getUrlType(info.url);
     if (urlType === "segmentAPI" && info.method === "POST" &&
       (info?.requestBody?.raw?.length > 0 || info?.requestBody?.formData || urlType === "Beaconed webSDK")) {
-      setFavicon("green");
       let postedString = universalPostParser(info);
       requests.set(info.requestId, {
         info: info,
@@ -64,6 +62,7 @@ async function mainListener() {
         } else if (/settings/i.test(info.url)){//the settings
           state.segment.settings = info;
           console.log("the settings have been received, the details are in ", state);
+          setFavicon("green");
         }
       }
       requests.delete(info?.requestId);
