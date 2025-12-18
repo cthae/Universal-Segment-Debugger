@@ -69,6 +69,8 @@ async function mainListener() {
     }
   }, filter);
 
+  //add onCompleted to get and report on the settings body.
+
   chrome.webRequest.onErrorOccurred.addListener(async info => {
     if (getUrlType(info.url) === "segment") {
       sendToTab({
