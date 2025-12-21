@@ -8,15 +8,15 @@ async function tabChangedCallback(){
   messageListenerRouter();
 }
 
-chrome.extension.onConnect.addListener((port) => {
-  console.log("Connected .....");
-  port.onMessage.addListener((msg) => {
-       console.log("message recieved", msg);
-       if (msg.action === "getState"){
-        port.postMessage(state);
-       }
-  });
-})
+chrome.runtime.onMessage.addListener(async (msg, sender, sendResponse) => {
+  console.log("BG: Message received!", msg);
+  if(msg?.action === "bgGetSegmentState"){
+    console.log("BG: Message received!, payload is: ", state.segment[(await chrome.tabs.query({ active: true, currentWindow: true }))[0].id]);
+    //sendResponse(state.segment[(await chrome.tabs.query({ active: true, currentWindow: true }))[0].id]);
+    sendResponse("test");
+    return true;
+  }
+});
 
 main();
 
@@ -66,13 +66,14 @@ async function mainListener() {
       if (info.method === "POST" && postRequest) {
         sendToTab(postRequest, info.tabId);
       } else {
-        if (/analytics/i.test(info.url)){//the core library
-          state.segment[info.tabId] = {};
+        if (/analytics.*\/(\w{30,40})\//i.test(info.url)){//the core library
+          state.segment[info.tabId] = state.segment[info.tabId] || {};
           state.segment[info.tabId].libraryLoaded = true;
-          state.segment[info.tabId].sourceId = info.url.match(/\/(\w{30,40})\//)[1];
+          console.log("info url is ", info.url)
+          state.segment[info.tabId].sourceId = info.url?.match(/\/(\w{30,40})\//)[1];
         } else if (/settings/i.test(info.url)){//the settings
-          state.segment[info.tabId] = {};
-          state.segment[info.tabId].settings = info;
+          state.segment[info.tabId] = state.segment[info.tabId] || {};
+          //state.segment[info.tabId].settings = info; //can't get the response from here.
           console.log("the settings have been received, the details are in ", state);
           setFavicon("green");
         }
@@ -82,12 +83,6 @@ async function mainListener() {
   }, filter);
 
   //chrome's webRequest can't get access to response's body, unfortunately.
-  
-  chrome.webRequest.onCompleted.addListener(async info => {
-    if (getUrlType(info.url) !== "N/A"){
-      console.log("onCompleted info debug: ", info);
-    }
-  }, filter);
 
   chrome.webRequest.onErrorOccurred.addListener(async info => {
     if (getUrlType(info.url) === "segment") {

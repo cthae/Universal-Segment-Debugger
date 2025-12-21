@@ -1,13 +1,25 @@
 document.addEventListener('DOMContentLoaded', async () => {
+  const tabId = (await chrome.tabs.query({ active: true, currentWindow: true }))[0].id;
   updateVersion(chrome.runtime.getManifest().version);
   deployClickListeners();
   await loadSettings();
   const client = await getValuesFromClient();
   updatePage(await checkStatus(client._satellite, client.pageLoadTime, client.aaHits.length, client.webSDKHits.length));
+  const stateFromBg = await getFromBackground("bgGetSegmentState");
+  console.log("state from background is: ", stateFromBg);
 });
 
 function updateVersion(version){
   document.getElementsByName("version").forEach((element) => {element.innerText = version});
+}
+
+async function getFromBackground(action){
+  let response = "";
+  await chrome.runtime.sendMessage(null, {action: action}, messageResponse => {
+    alert(messageResponse);
+    response = messageResponse;
+  });
+  return response;
 }
 
 async function getValuesFromClient(){
