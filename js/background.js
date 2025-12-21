@@ -8,6 +8,16 @@ async function tabChangedCallback(){
   messageListenerRouter();
 }
 
+chrome.extension.onConnect.addListener((port) => {
+  console.log("Connected .....");
+  port.onMessage.addListener((msg) => {
+       console.log("message recieved", msg);
+       if (msg.action === "getState"){
+        port.postMessage(state);
+       }
+  });
+})
+
 main();
 
 chrome.runtime.onStartup.addListener(checkSettings);
@@ -57,10 +67,12 @@ async function mainListener() {
         sendToTab(postRequest, info.tabId);
       } else {
         if (/analytics/i.test(info.url)){//the core library
-          state.segment.libraryLoaded = true;
-          state.segment.sourceId = info.url.match(/\/(\w{30,40})\//)[1];
+          state.segment[info.tabId] = {};
+          state.segment[info.tabId].libraryLoaded = true;
+          state.segment[info.tabId].sourceId = info.url.match(/\/(\w{30,40})\//)[1];
         } else if (/settings/i.test(info.url)){//the settings
-          state.segment.settings = info;
+          state.segment[info.tabId] = {};
+          state.segment[info.tabId].settings = info;
           console.log("the settings have been received, the details are in ", state);
           setFavicon("green");
         }
@@ -69,7 +81,13 @@ async function mainListener() {
     }
   }, filter);
 
-  //add onCompleted to get and report on the settings body.
+  //chrome's webRequest can't get access to response's body, unfortunately.
+  
+  chrome.webRequest.onCompleted.addListener(async info => {
+    if (getUrlType(info.url) !== "N/A"){
+      console.log("onCompleted info debug: ", info);
+    }
+  }, filter);
 
   chrome.webRequest.onErrorOccurred.addListener(async info => {
     if (getUrlType(info.url) === "segment") {
