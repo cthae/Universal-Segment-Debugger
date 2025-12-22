@@ -11,9 +11,8 @@ async function tabChangedCallback(){
 chrome.runtime.onMessage.addListener(async (msg, sender, sendResponse) => {
   console.log("BG: Message received!", msg);
   if(msg?.action === "bgGetSegmentState"){
-    console.log("BG: Message received!, payload is: ", state.segment[(await chrome.tabs.query({ active: true, currentWindow: true }))[0].id]);
     //sendResponse(state.segment[(await chrome.tabs.query({ active: true, currentWindow: true }))[0].id]);
-    sendResponse("test");
+    sendResponse({response: "test"});
     return true;
   }
 });

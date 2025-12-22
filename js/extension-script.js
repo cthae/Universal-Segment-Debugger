@@ -15,8 +15,8 @@ function updateVersion(version){
 
 async function getFromBackground(action){
   let response = "";
-  await chrome.runtime.sendMessage(null, {action: action}, messageResponse => {
-    alert(messageResponse);
+  await chrome.runtime.sendMessage(null, {action: action}, (messageResponse) => {
+    console.log("ES: state from BG received: ", messageResponse);
     response = messageResponse;
   });
   return response;
