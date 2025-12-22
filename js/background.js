@@ -12,7 +12,7 @@ chrome.runtime.onMessage.addListener(async (msg, sender, sendResponse) => {
   console.log("BG: Message received!", msg);
   if(msg?.action === "bgGetSegmentState"){
     //sendResponse(state.segment[(await chrome.tabs.query({ active: true, currentWindow: true }))[0].id]);
-    sendResponse({response: "test"});
+    sendResponse({response: state.segment});
     return true;
   }
 });

@@ -4,9 +4,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   deployClickListeners();
   await loadSettings();
   const client = await getValuesFromClient();
-  updatePage(await checkStatus(client._satellite, client.pageLoadTime, client.aaHits.length, client.webSDKHits.length));
   const stateFromBg = await getFromBackground("bgGetSegmentState");
   console.log("state from background is: ", stateFromBg);
+  updatePage(await checkStatus(client._satellite, client.pageLoadTime, client.aaHits.length, client.webSDKHits.length, stateFromBg?.response[tabId]));
 });
 
 function updateVersion(version){
@@ -15,10 +15,11 @@ function updateVersion(version){
 
 async function getFromBackground(action){
   let response = "";
-  await chrome.runtime.sendMessage(null, {action: action}, (messageResponse) => {
-    console.log("ES: state from BG received: ", messageResponse);
+  await chrome.runtime.sendMessage(null, {action: action}, async (messageResponse) => {
+    console.log("messageResponse is: ", messageResponse);
     response = messageResponse;
   });
+  console.log("response is: ", response);
   return response;
 }
 
@@ -566,13 +567,13 @@ async function getDLWithNoGTM(name) {
   return result;
 }
 
-async function checkStatus(_satellite, pageLoadTime, AAHitsNumber, WebSDKHitsNumber) {
+async function checkStatus(_satellite, pageLoadTime, AAHitsNumber, WebSDKHitsNumber, segmentStatus) {
   let dataLayer = [];
   let dlEvent = {};
   const details = {
     pstatus: {},
     lstatus: {},
-    pname: {},
+    sourceId: {},
     env: {},
     bdate: {},
     AAHitsNumber: {},
@@ -593,24 +594,23 @@ async function checkStatus(_satellite, pageLoadTime, AAHitsNumber, WebSDKHitsNum
       info: "The page is still loading. Seems like the window.performance.timing.domContentLoadedEventEnd hasn't fired yet."
     };
   }
-  if (typeof _satellite !== 'undefined' && _satellite && typeof _satellite === "object") {
-    _satellite._container = JSON.parse(await getContainer());
+  if (segmentStatus?.libraryLoaded){
     details.lstatus = {
       value: "Found",
       class: "success",
-      info: "_satellite is defined and is an object."
+      info: "Detected a settings call for the Segment config"
     };
     if (_satellite.property && typeof _satellite.property.name === "string") {
-      details.pname = {
-        value: _satellite.property.name,
+      details.sourceId = {
+        value: segmentStatus?.sourceId,
         class: "success",
-        info: "We're good. The property name is there."
+        info: "We're good. The sorce id is found."
       };
     } else {
-      details.pname = {
+      details.sourceId = {
         value: "Not Found",
         class: "warn",
-        info: "_satellite.property has some issues."
+        info: "source id wasn't identified."
       };
     }
     if (typeof _satellite.environment === 'object') {
