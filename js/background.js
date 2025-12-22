@@ -8,12 +8,12 @@ async function tabChangedCallback(){
   messageListenerRouter();
 }
 
-chrome.runtime.onMessage.addListener(async (msg, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   console.log("BG: Message received!", msg);
   if(msg?.action === "bgGetSegmentState"){
     //sendResponse(state.segment[(await chrome.tabs.query({ active: true, currentWindow: true }))[0].id]);
     sendResponse({response: state.segment});
-    return true;
+    //return true;
   }
 });
 
