@@ -603,60 +603,7 @@ async function checkStatus(_satellite, pageLoadTime, AAHitsNumber, WebSDKHitsNum
         info: "source id wasn't identified."
       };
     }
-    if (typeof _satellite.environment === 'object') {
-      const env =  _satellite.environment.stage;
-      details.env = {
-        value: env.charAt(0).toUpperCase() + env.slice(1),
-        class: env === 'production' ? "success" : "warn",
-        info: "Production library is currently loaded."
-      };
-    } else {
-      details.env = {
-        value: "ERROR",
-        class: "error",
-        info: "Environment is not defined despite _satellite being loaded. Something must be interfering with the _satellite object."
-      };
-    }
-    if (_satellite.buildInfo && _satellite.buildInfo.buildDate) {
-      details.bdate = {
-        value: formattedTimeSinceLastBuild(_satellite) + " Ago",
-        class: "success",
-        info: "How long since the current library's last build. If it's prod, then it's time since last publish, essentially."
-      };
-    } else {
-      details.bdate = {
-        value: "ERROR",
-        class: "error",
-        info: "Build info is not defined despite _satellite being loaded. Something must be interfering with the _satellite object."
-      };
-    }
-    if (AAHitsNumber > 0) {
-      details.AAHitsNumber = {
-        value: AAHitsNumber,
-        class: "success",
-        info: "Number of AA server calls detected by now, usually originated from the appmeasurement.js lib, deployed by the Adobe Analytics extension in Launch"
-      };
-    } else {
-      details.AAHitsNumber = {
-        value: AAHitsNumber,
-        class: "warn",
-        info: "No AA hits yet"
-      };
-    }
-    if (WebSDKHitsNumber > 0) {
-      details.WebSDKHitsNumber = {
-        value: WebSDKHitsNumber,
-        class: "success",
-        info: "Number of Web SDK calls detected by now, usually originated from the alloy.js lib, deployed by the Web SDK extension in Launch"
-      };
-    } else {
-      details.WebSDKHitsNumber = {
-        value: WebSDKHitsNumber,
-        class: "warn",
-        info: "No Web SDK calls yet"
-      };
-    }
-    if (_satellite._container && _satellite._container.extensions) {
+    if (_satellite?._container && _satellite?._container?.extensions) {
       if (_satellite._container.extensions["data-layer-manager-search-discovery"]) {
         details.dl = {
           value: "DM's DL Found: " + _satellite._container.extensions["data-layer-manager-search-discovery"].settings.dataLayerObjectName,
