@@ -4,18 +4,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   deployClickListeners();
   await loadSettings();
   const client = await getValuesFromClient();
-  const stateFromBg = await getFromBackground("bgGetSegmentState");
+  const stateFromBg = await chrome.runtime.sendMessage({action: "bgGetSegmentState"});
   console.log("state from background is: ", stateFromBg);
-  updatePage(await checkStatus(client._satellite, client.pageLoadTime, client.aaHits.length, client.webSDKHits.length, stateFromBg?.response[tabId]));
+  updatePage(await checkStatus(client._satellite, client.pageLoadTime, client.aaHits.length, client.webSDKHits.length, stateFromBg?.[tabId]));
 });
 
 function updateVersion(version){
   document.getElementsByName("version").forEach((element) => {element.innerText = version});
-}
-
-async function getFromBackground(action){
-  let response = "";
-  return await chrome.runtime.sendMessage({action: action});
 }
 
 async function getValuesFromClient(){
@@ -595,7 +590,7 @@ async function checkStatus(_satellite, pageLoadTime, AAHitsNumber, WebSDKHitsNum
       class: "success",
       info: "Detected a settings call for the Segment config"
     };
-    if (_satellite.property && typeof _satellite.property.name === "string") {
+    if (segmentStatus?.sourceId) {
       details.sourceId = {
         value: segmentStatus?.sourceId,
         class: "success",
