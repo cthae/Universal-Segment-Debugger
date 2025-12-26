@@ -16,15 +16,7 @@ function updateVersion(version){
 async function getValuesFromClient(){
   const client = {};
   client.timing = JSON.parse(await getTiming());
-  client._satellite = JSON.parse(await getPageVar('_satellite'));
   client.segmentSettingsCalls = await getSegmentSourceIds(document.getElementById('segmentCdnEndpoint')?.value || '');
-  client.serverCalls = JSON.parse(await getAACalls());
-  client.aaHits = client.serverCalls.filter((url) => {
-    return /\/b\/ss\//i.test(url.name);
-  });
-  client.webSDKHits = client.serverCalls.filter((url) => {
-    return /\/ee\//i.test(url.name);
-  });
   client.pageLoadTime = client.timing.toFixed(0);
   console.log('client is ');
   console.log(JSON.stringify(client, null, 4));
@@ -482,24 +474,15 @@ async function getContainer() {
 }
 
 async function getSegmentSourceIds(segmentCdnEndpoint = "cdn.segment.com") {
+  if (!segmentCdnEndpoint){
+    return;
+  }
   const [{ result }] = await chrome.scripting.executeScript({
-    func: () => {
+    func: (segmentCdnEndpoint) => {
       const segmentSettingsEndpointRegex = new RegExp(`${segmentCdnEndpoint}.*\/([^\/]{30,40})\/`, 'i');
       JSON.stringify(performance.getEntriesByType("resource").filter((obj) => { return segmentSettingsEndpointRegex.test(obj.name); }))
     },
-    args: [],
-    target: {
-      tabId: (await chrome.tabs.query({ active: true, currentWindow: true }))[0].id
-    },
-    world: 'MAIN',
-  });
-  return result;
-}
-
-async function getAACalls() {
-  const [{ result }] = await chrome.scripting.executeScript({
-    func: () => JSON.stringify(performance.getEntriesByType("resource").filter((obj) => { return /(\/b\/ss\/)|(\/ee\/)/i.test(obj.name); })),
-    args: [],
+    args: [segmentCdnEndpoint],
     target: {
       tabId: (await chrome.tabs.query({ active: true, currentWindow: true }))[0].id
     },
@@ -539,18 +522,6 @@ async function getPageVar(name, tabId) {
     target: {
       tabId: tabId ??
         (await chrome.tabs.query({ active: true, currentWindow: true }))[0].id
-    },
-    world: 'MAIN',
-  });
-  return result;
-}
-
-async function getDLWithNoGTM(name) {
-  const [{ result }] = await chrome.scripting.executeScript({
-    func: name => JSON.stringify((window[name] || []).filter((dl) => {return dl.event && dl.event.indexOf("gtm.") === -1})),
-    args: [name],
-    target: {
-      tabId: (await chrome.tabs.query({ active: true, currentWindow: true }))[0].id
     },
     world: 'MAIN',
   });
@@ -601,63 +572,6 @@ async function checkStatus(_satellite, pageLoadTime, AAHitsNumber, WebSDKHitsNum
         value: "Not Found",
         class: "warn",
         info: "source id wasn't identified."
-      };
-    }
-    if (_satellite?._container && _satellite?._container?.extensions) {
-      if (_satellite._container.extensions["data-layer-manager-search-discovery"]) {
-        details.dl = {
-          value: "DM's DL Found: " + _satellite._container.extensions["data-layer-manager-search-discovery"].settings.dataLayerObjectName,
-          class: "success",
-          info: "Data Layer Manager from Search Discovery was successfully detected!"
-        };
-        dataLayer = await JSON.parse(await getDLWithNoGTM(_satellite._container.extensions["data-layer-manager-search-discovery"].settings.dataLayerObjectName));
-      } else if (_satellite._container.extensions["gcoe-adobe-client-data-layer"]) {
-        details.dl = {
-          value: "ACDL's DL Found: " + _satellite._container.extensions["gcoe-adobe-client-data-layer"].settings.dataLayerName,
-          class: "success",
-          info: "ACDL was successfully detected!"
-        };
-        dataLayer = await JSON.parse(await getDLWithNoGTM(_satellite._container.extensions["gcoe-adobe-client-data-layer"].settings.dataLayerName));
-      } else if (_satellite._container.extensions["adobegoogledatalayer"]) {
-        details.dl = {
-          value: "GTM's DL Found: " + _satellite._container.extensions["adobegoogledatalayer"].settings.dataLayer,
-          class: "success",
-          info: "GTM DL's extension was successfully detected!"
-        };
-        dataLayer = await JSON.parse(await getDLWithNoGTM(_satellite._container.extensions["adobegoogledatalayer"].settings.dataLayer));
-      } else {
-        details.dl = {
-          value: "No DL Extension",
-          class: "warn",
-          info: "No DL has been detected."
-        };
-        details.dlevent = {
-          value: "No DL Extension",
-          class: "warn",
-          info: "No DL has been detected."
-        };
-      }
-      if (Array.isArray(dataLayer)){
-        dlEvent = dataLayer.slice(-1)[0] || {event:"No events yet :)"};
-      }
-      if (dlEvent) {
-        details.dlevent = {
-          value: dlEvent.event,
-          class: dlEvent === "No events yet :)" ? "warn" : "success",
-          info: "Last event that is not a 'gtm.' event :)"
-        };
-      } else {
-        details.dlevent = {
-          value: "No events yet :)",
-          class: "warn",
-          info: "DL is found, but it doesn't contain non-gtm events."
-        };
-      }
-    } else {
-      details.dl = details.dlevent = {
-        value: "No Container",
-        class: "error",
-        info: "No _satellite._container has been found."
       };
     }
   } else {
