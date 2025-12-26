@@ -32,14 +32,11 @@ function deployClickListeners() {
   document.getElementById("delAllRedirections").addEventListener("click", removeAllRedirections);
   document.getElementById("newlib").addEventListener("click", evnt => {event.target.innerText=""});
   document.getElementById("blockPageUnload").addEventListener("click", blockPageUnload);
-  document.getElementById("printAlloy").addEventListener("click", printAlloy);
   document.getElementById("OTCheckConsent").addEventListener("click", OTCheckConsent);
   document.getElementById("OTOpenManager").addEventListener("click", OTOpenManager);
   document.getElementById("OTRejectAll").addEventListener("click", OTRejectAll);
   document.getElementById("OTAllowAll").addEventListener("click", OTAllowAll);
   document.getElementById("raccoon").addEventListener("click", loveTheRaccoon);
-  //document.getElementById("setLoggingHeadings").addEventListener("click", setLoggingHeadings);
-  //document.getElementById("openChromeFlags").addEventListener("click", openChromeFlags);
   document.getElementById("defaultTab").addEventListener("change", defaultTabChange);
   document.getElementById("themeSwitcher").addEventListener("click", switchTheme);
   document.getElementById("clearCookies").addEventListener("click", clearCookies);
@@ -205,25 +202,6 @@ function OTCheckConsent(event){
     console.groupEnd()
     function css(c) {
       return `color: ${c};font-weight: 500;font-size: 1.3em; background-color: dimgray`;
-    }
-  });
-}
-
-function printAlloy(event){
-  event.target.classList = "success";
-  event.target.innerText = "Check the console";
-  executeOnPage("", () => {
-    const cssHeadField = `border-bottom: 1px solid grey;font-family: 'Courier New', monospace;font-weight: 400;font-size: 1.2em; background-color: DarkCyan; color: yellow`;
-    const cssHeadValue = `border-bottom: 1px solid grey;font-family: 'Courier New', monospace;font-weight: 700;font-size: 1.2em; background-color: DarkCyan; color: yellow`;
-    if(Array.isArray(window?.__alloyNS)){
-      console.log("%cUniversal Adobe Debugger - Alloy instances debugging:", cssHeadField);
-      const promises = __alloyNS.map(alloy => window[alloy]("getLibraryInfo").then(response => {
-        console.log(`%cAlloy instance name: %c${alloy}`, cssHeadField, cssHeadValue);
-        console.log(response.libraryInfo);
-      }));
-      Promise.allSettled(promises).then(_ => {console.log("%c^^^", cssHeadField) });
-    } else {
-      console.log("%cUniversal Adobe Debugger: Alloy instances haven't been found on the page.", cssHeadField);
     }
   });
 }
@@ -698,12 +676,6 @@ async function settingsSetter(settings) {
       chrome.storage.sync.set({ settings: settings });
     });
   });
-
-  const originalLaunchLib = await executeOnPage("", function(a){
-    const launchLib = document.querySelector("script[src*='/launch-']") || document.querySelector("script[src*='/satelliteLib-']");
-    return launchLib ? launchLib.src : false;
-  });
-  document.getElementById("currentlib").innerText = originalLaunchLib || "[No Launch Lib Detected]";
 }
 
 function logSettings(){
