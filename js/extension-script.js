@@ -424,7 +424,7 @@ function updateDynamicBookmarks(){
   const workspace = document.getElementById("segmentWorkspace").value;
   if(workspace){
     document.getElementById("segmentWorkspaceLinks").querySelectorAll("a").forEach(link => {
-      link.href = link.href.replace(/segment\.com\/[^\/]*\//,`/segment.com/${workspace}/`);
+      link.href = link.href.replace(/segment\.com\/[^\/]*\//,`segment.com/${workspace}/`);
     });
   }
 }
