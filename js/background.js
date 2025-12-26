@@ -103,8 +103,8 @@ async function mainListener() {
 }
 
 function getUrlType(url) {
-  const segmentCdnEndpoint = state.settings.segmentCdnEndpoint || "cdn.segment.com";
-  const segmentApiEndpoint = state.settings.segmentApiEndpoint || "api.segment.io";
+  const segmentCdnEndpoint = state?.settings?.segmentCdnEndpoint || "cdn.segment.com";
+  const segmentApiEndpoint = state?.settings?.segmentApiEndpoint || "api.segment.io";
   if (url.includes(segmentCdnEndpoint)){
     return "segmentCDN";
   } else if (url.includes(segmentApiEndpoint)){

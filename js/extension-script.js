@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const client = await getValuesFromClient();
   const stateFromBg = await chrome.runtime.sendMessage({action: "bgGetSegmentState"});
   console.log("state from background is: ", stateFromBg);
-  updatePage(await checkStatus(client._satellite, client.pageLoadTime, client.aaHits.length, client.webSDKHits.length, stateFromBg?.[tabId]));
+  updatePage(await checkStatus(client.pageLoadTime, stateFromBg?.[tabId]));
 });
 
 function updateVersion(version){
@@ -16,11 +16,9 @@ function updateVersion(version){
 async function getValuesFromClient(){
   const client = {};
   client.timing = JSON.parse(await getTiming());
-  client.segmentSettingsCalls = await getSegmentSourceIds(document.getElementById('segmentCdnEndpoint')?.value || '');
   client.pageLoadTime = client.timing.toFixed(0);
   console.log('client is ');
   console.log(JSON.stringify(client, null, 4));
-  
   return client;
 }
 
@@ -28,6 +26,7 @@ function deployClickListeners() {
   document.querySelectorAll("button.tablinks").forEach((button) => {
     button.addEventListener("click", switchTab);
   });
+  document.getElementById("segmentWorkspace").addEventListener("change", segmentWorkspaceSpecified);
   document.getElementById("setRedirection").addEventListener("click", setRedirection);
   document.getElementById("delAllRedirections").addEventListener("click", removeAllRedirections);
   document.getElementById("newlib").addEventListener("click", evnt => {event.target.innerText=""});
@@ -41,6 +40,14 @@ function deployClickListeners() {
   document.getElementById("themeSwitcher").addEventListener("click", switchTheme);
   document.getElementById("clearCookies").addEventListener("click", clearCookies);
   document.getElementById("resetColors").addEventListener("click", resetColors);
+}
+function segmentWorkspaceSpecified(event){
+  const workspace = event.target.value;
+  if(workspace){
+    document.getElementById("segmentWorkspaceLinks").querySelectorAll("a").forEach(link => {
+      link.href.replace(/segment.com\/[^\/].*]\//,`/segment.com/${workspace}/`);
+    });
+  }
 }
 
 function resetColors(event){
@@ -414,53 +421,12 @@ async function updatePage(launchDebugInfo) {
     reportElement.innerHTML = launchDebugInfo[launchDebugItem].value;
     reportElement.parentElement.setAttribute("title", launchDebugInfo[launchDebugItem].info);
   });
-  setStatusDependantListeners();
-}
-
-function setStatusDependantListeners(){
-  const dlCell = document.getElementById("dl");
-  const dlEvent = document.getElementById("dlevent");
-  if (/dl found: /i.test(dlCell.innerText)){
-    const dlName = dlCell.innerText.split(": ").slice(-1)[0];
-    dlCell.addEventListener('click', (event) => {
-      executeOnPage(dlName, function(dlName){console.log("Printing the Data Layer variable: " + dlName + " Last 20 events\n"); 
-      console.log("{", ...Object.entries(window[dlName]).slice(-20).flatMap(([k, v]) => ["\n  " + k + ":", v]), "\n}")});//Thanks to Maxdamantus for this beauty.
-    })
-    if(!/no events/i.test(dlEvent.innerText)){
-      dlEvent.addEventListener('click', (event) => {
-        executeOnPage({dlEvent: dlEvent.innerText, dlName: dlName}, 
-          function(dlData){
-            console.log("Printing the last non-GTM DL variable " + dlData.dlEvent +":\n", 
-              window[dlData.dlName].findLast((dlElement => {
-                return dlElement.event === dlData.dlEvent;
-              })))});
-      })
-    }
-  }
 }
 
 async function getContainer() {
   const [{ result }] = await chrome.scripting.executeScript({
     func: () => JSON.stringify(_satellite._container),
     args: [],
-    target: {
-      tabId: (await chrome.tabs.query({ active: true, currentWindow: true }))[0].id
-    },
-    world: 'MAIN',
-  });
-  return result;
-}
-
-async function getSegmentSourceIds(segmentCdnEndpoint = "cdn.segment.com") {
-  if (!segmentCdnEndpoint){
-    return;
-  }
-  const [{ result }] = await chrome.scripting.executeScript({
-    func: (segmentCdnEndpoint) => {
-      const segmentSettingsEndpointRegex = new RegExp(`${segmentCdnEndpoint}.*\/([^\/]{30,40})\/`, 'i');
-      JSON.stringify(performance.getEntriesByType("resource").filter((obj) => { return segmentSettingsEndpointRegex.test(obj.name); }))
-    },
-    args: [segmentCdnEndpoint],
     target: {
       tabId: (await chrome.tabs.query({ active: true, currentWindow: true }))[0].id
     },
@@ -506,19 +472,11 @@ async function getPageVar(name, tabId) {
   return result;
 }
 
-async function checkStatus(_satellite, pageLoadTime, AAHitsNumber, WebSDKHitsNumber, segmentStatus) {
-  let dataLayer = [];
-  let dlEvent = {};
+async function checkStatus(pageLoadTime, segmentStatus) {
   const details = {
     pstatus: {},
     lstatus: {},
-    sourceId: {},
-    env: {},
-    bdate: {},
-    AAHitsNumber: {},
-    WebSDKHitsNumber: {},
-    dl: {},
-    dlevent: {}
+    sourceId: {}
   };
   if (pageLoadTime > 0) {
     details.pstatus = {
@@ -552,33 +510,8 @@ async function checkStatus(_satellite, pageLoadTime, AAHitsNumber, WebSDKHitsNum
         info: "source id wasn't identified."
       };
     }
-  } else {
-    details.lstatus.value = "Not Found";
-    details.lstatus.class = "error";
-    details.lstatus.info = "_satellite is not an object";
-    details.env.value = details.bdate.value = details.pname.value =
-      details.WebSDKHitsNumber.value = details.AAHitsNumber.value = details.dl.value =
-      details.dlevent.value = "N/A";
-    details.env.class = details.bdate.class = details.pname.class =
-      details.WebSDKHitsNumber.class = details.AAHitsNumber.class = details.dl.class =
-      details.dlevent.class = "warn";
-    details.env.info = details.bdate.info = details.pname.info =
-      details.WebSDKHitsNumber.info = details.AAHitsNumber.info = details.dl.info =
-      details.dlevent.info = "Since _satellite is not there, no wonder this is not there either, heh.";
   }
   return details;
-}
-
-function formattedTimeSinceLastBuild(_satellite) {
-  const ms = new Date() - new Date(_satellite.buildInfo.buildDate);
-  const seconds = (ms / 1000).toFixed(1);
-  const minutes = (ms / (1000 * 60)).toFixed(1);
-  const hours = (ms / (1000 * 60 * 60)).toFixed(1);
-  const days = (ms / (1000 * 60 * 60 * 24)).toFixed(1);
-  if (seconds < 60) return seconds + " Sec";
-  else if (minutes < 60) return minutes + " Min";
-  else if (hours < 24) return hours + " Hrs";
-  else return days + " Days";
 }
 
 async function loadSettings() {
