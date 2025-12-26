@@ -43,12 +43,7 @@ function deployClickListeners() {
 }
 
 function segmentWorkspaceChanged(event){
-  const workspace = event.target.value;
-  if(workspace){
-    document.getElementById("segmentWorkspaceLinks").querySelectorAll("a").forEach(link => {
-      link.href = link.href.replace(/segment\.com\/[^\/]*\//,`/segment.com/${workspace}/`);
-    });
-  }
+  updateDynamicBookmarks();
 }
 
 function resetColors(event){
@@ -422,6 +417,16 @@ async function updatePage(launchDebugInfo) {
     reportElement.innerHTML = launchDebugInfo[launchDebugItem].value;
     reportElement.parentElement.setAttribute("title", launchDebugInfo[launchDebugItem].info);
   });
+  updateDynamicBookmarks();
+}
+
+function updateDynamicBookmarks(){
+  const workspace = document.getElementById("segmentWorkspace").value;
+  if(workspace){
+    document.getElementById("segmentWorkspaceLinks").querySelectorAll("a").forEach(link => {
+      link.href = link.href.replace(/segment\.com\/[^\/]*\//,`/segment.com/${workspace}/`);
+    });
+  }
 }
 
 async function getTiming() {
