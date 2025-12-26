@@ -26,7 +26,7 @@ function deployClickListeners() {
   document.querySelectorAll("button.tablinks").forEach((button) => {
     button.addEventListener("click", switchTab);
   });
-  document.getElementById("segmentWorkspace").addEventListener("change", segmentWorkspaceSpecified);
+  document.getElementById("segmentWorkspace").addEventListener("input", segmentWorkspaceChanged);
   document.getElementById("setRedirection").addEventListener("click", setRedirection);
   document.getElementById("delAllRedirections").addEventListener("click", removeAllRedirections);
   document.getElementById("newlib").addEventListener("click", evnt => {event.target.innerText=""});
@@ -41,11 +41,12 @@ function deployClickListeners() {
   document.getElementById("clearCookies").addEventListener("click", clearCookies);
   document.getElementById("resetColors").addEventListener("click", resetColors);
 }
-function segmentWorkspaceSpecified(event){
+
+function segmentWorkspaceChanged(event){
   const workspace = event.target.value;
   if(workspace){
     document.getElementById("segmentWorkspaceLinks").querySelectorAll("a").forEach(link => {
-      link.href.replace(/segment.com\/[^\/].*]\//,`/segment.com/${workspace}/`);
+      link.href = link.href.replace(/segment\.com\/[^\/]*\//,`/segment.com/${workspace}/`);
     });
   }
 }
@@ -423,18 +424,6 @@ async function updatePage(launchDebugInfo) {
   });
 }
 
-async function getContainer() {
-  const [{ result }] = await chrome.scripting.executeScript({
-    func: () => JSON.stringify(_satellite._container),
-    args: [],
-    target: {
-      tabId: (await chrome.tabs.query({ active: true, currentWindow: true }))[0].id
-    },
-    world: 'MAIN',
-  });
-  return result;
-}
-
 async function getTiming() {
   const [{ result }] = await chrome.scripting.executeScript({
     func: () => JSON.stringify(performance.getEntriesByType("navigation")[0]?.duration),
@@ -510,6 +499,17 @@ async function checkStatus(pageLoadTime, segmentStatus) {
         info: "source id wasn't identified."
       };
     }
+  } else {
+    details.lstatus = {
+      value: "Not Found",
+      class: "warn",
+      info: "Segment library hasn't been detected"
+    };
+    details.sourceId = {
+      value: "N/A",
+      class: "warn",
+      info: "No library = No source id."
+    };
   }
   return details;
 }
