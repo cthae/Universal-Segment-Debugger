@@ -11,9 +11,8 @@ async function tabChangedCallback(){
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   console.log("BG: Message received!", msg);
   if(msg?.action === "bgGetSegmentState"){
-    //sendResponse(state.segment[(await chrome.tabs.query({ active: true, currentWindow: true }))[0].id]);
+    console.log("BG: The state is: ", state);
     sendResponse(state.segment);
-    //return true;
   }
 });
 
@@ -65,13 +64,12 @@ async function mainListener() {
       if (info.method === "POST" && postRequest) {
         sendToTab(postRequest, info.tabId);
       } else {
-        if (/analytics.*\/(\w{30,40})\//i.test(info.url)){//the core library
+        if (/analytics.*\/(\w{30,40})\//i.test(info.url)){//the analytics library
           state.segment[info.tabId] = state.segment[info.tabId] || {};
-          state.segment[info.tabId].libraryLoaded = true;
-          console.log("info url is ", info.url)
-          state.segment[info.tabId].sourceId = info.url?.match(/\/(\w{30,40})\//)[1];
         } else if (/settings/i.test(info.url)){//the settings
           state.segment[info.tabId] = state.segment[info.tabId] || {};
+          state.segment[info.tabId].libraryLoaded = true;
+          state.segment[info.tabId].sourceId = info.url?.match(/\/(\w{30,40})\//)[1];
           //state.segment[info.tabId].settings = info; //can't get the response from here.
           console.log("the settings have been received, the details are in ", state);
           setFavicon("green");
